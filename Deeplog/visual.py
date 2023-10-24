@@ -1,62 +1,132 @@
-# 导入numpy库，用于数组和矩阵计算
-# 导入matplotlib的pyplot模块，用于绘图
+import json
+
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.font_manager import FontProperties
 
-# 定义两组分数，每组三个值，分别代表精确度、召回率和F1分数
-PCA = (0.98, 0.67, 0.79)
-LSTM = (0.9526, 0.9903, 0.9711)
 
-# 创建一个新的画布和一个轴对象
-fig, ax = plt.subplots()
+def load_metrics(file_path):
+    """
+    从JSON文件中加载评估指标数据。
 
-# 定义条形图的一些参数
-index = np.arange(3)  # 定义三个分类
-bar_width = 0.2  # 条形的宽度
-opacity = 0.4  # 条形的透明度
+    参数:
+        file_path (str): JSON文件的路径。
 
-# 在轴上绘制两组数据的条形图
-rects1 = ax.bar(index, PCA, bar_width, alpha=opacity, color='b', label='PCA')  # 绘制PCA的条形图
-rects2 = ax.bar(index + bar_width, LSTM, bar_width, alpha=opacity, color='r', label='LSTM')  # 绘制LSTM的条形图
+    返回:
+        dict: 包含评估指标的字典。
+    """
+    with open(file_path, 'r') as file:
+        metrics = json.load(file)
+    return metrics
 
-# 设置图表的标签和标题
-ax.set_xlabel('Measure')  # X轴标签，表示评估指标
-ax.set_ylabel('Scores')  # Y轴标签，表示得分
-ax.set_title('Scores by different models')  # 图表的总标题
-ax.set_xticks(index + bar_width / 2)  # 设置X轴刻度位置
-ax.set_xticklabels(('Precesion', 'Recall', 'F1-score'))  # 设置X轴刻度标签
-ax.legend()  # 显示图例
 
-# 显示图形
-plt.show()
+def plot_confusion_matrix(confusion_matrix, class_names, font, title='Confusion Matrix', cmap=plt.cm.Blues):
+    """
+    绘制混淆矩阵的函数。
 
-# 定义一些数据点和计算精确度、召回率和F1分数所需的参数
-x = [8, 9, 10, 11]  # 窗口大小
-FP = [605, 588, 495, 860]  # 假正例数
-FN = [465, 333, 108, 237]  # 假负例数
-TP = [4123 - FN[i] for i in range(4)]  # 真正例数，通过计算得出
-# 下面计算精确度、召回率和F1分数
-P = [TP[i] / (TP[i] + FP[i]) for i in range(4)]  # 精确度计算公式
-R = [TP[i] / (TP[i] + FN[i]) for i in range(4)]  # 召回率计算公式
-F1 = [2 * P[i] * R[i] / (P[i] + R[i]) for i in range(4)]  # F1分数计算公式
+    参数:
+        confusion_matrix (dict): 包含混淆矩阵的字典。
+        class_names (list): 类别名称的列表。
+        font: 字体属性。
+        title (str): 图表标题。
+        cmap: 颜色映射。
+    """
+    cm = np.array([
+        [confusion_matrix['TN'], confusion_matrix['FP']],
+        [confusion_matrix['FN'], confusion_matrix['TP']]
+    ])
 
-# 使用不同的标记和线条样式绘制精确度、召回率和F1分数
-l1 = plt.plot(x, P, ':rx')  # 绘制精确度，红色虚线，x标记
-l2 = plt.plot(x, R, ':b+')  # 绘制召回率，蓝色虚线，+标记
-l3 = plt.plot(x, F1, ':k^')  # 绘制F1分数，黑色虚线，上三角标记
+    fig, ax = plt.subplots()
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    ax.figure.colorbar(im, ax=ax)
 
-# 设置X轴和Y轴的标签
-plt.xlabel('window_size')  # X轴标签，表示窗口大小
-plt.ylabel('scores')  # Y轴标签，表示得分
+    ax.set(xticks=np.arange(cm.shape[1]),
+           yticks=np.arange(cm.shape[0]),
+           xticklabels=class_names, yticklabels=class_names,
+           title=title,
+           ylabel='True Labels',
+           xlabel='Predicted Labels')
 
-# 显示图例
-plt.legend((l1[0], l2[0], l3[0]), ('Precision', 'Recall', 'F1-score'))
+    set_font_properties(ax, font)
 
-# 设置X轴的刻度
-plt.xticks(x)
+    fmt = 'd'
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], fmt),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black", fontproperties=font)
 
-# 设置Y轴的范围
-plt.ylim((0.5, 1))
+    fig.tight_layout()
+    plt.show()
 
-# 显示图形
-plt.show()
+
+def plot_metrics(metrics, font):
+    """
+    绘制性能指标的柱状图。
+
+    参数:
+        metrics (dict): 包含性能指标的字典。
+        font: 字体属性。
+    """
+    performance_metrics = ['Precision', 'Recall', 'F1 Score']
+    metrics_values = [metrics['Precision'], metrics['Recall'], metrics['F1-score']]
+
+    bar_chart(performance_metrics, metrics_values, ['blue', 'green', 'orange'],
+              'Performance Metrics', 'Value', 'Model Performance Metrics', font)
+
+
+def bar_chart(x_labels, y_values, colors, x_label, y_label, chart_title, font):
+    """
+    绘制柱状图的通用函数。
+
+    参数:
+        x_labels (list): X轴标签。
+        y_values (list): Y轴值。
+        colors (list): 柱子颜色。
+        x_label (str): X轴标签。
+        y_label (str): Y轴标签。
+        chart_title (str): 图表标题。
+        font: 字体属性。
+    """
+    plt.bar(x_labels, y_values, color=colors)
+    plt.xlabel(x_label, fontproperties=font)
+    plt.ylabel(y_label, fontproperties=font)
+    plt.title(chart_title, fontproperties=font)
+    plt.xticks(fontproperties=font)
+    plt.show()
+
+
+def set_font_properties(ax, font):
+    """
+    设置轴的字体属性。
+
+    参数:
+        ax: Matplotlib轴对象。
+        font: 字体属性。
+    """
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor", fontproperties=font)
+    plt.setp(ax.get_yticklabels(), fontproperties=font)
+
+
+def main():
+    metrics_file_path = 'evaluation_metrics.json'
+    font_path = r"C:\Windows\Fonts\msyh.ttc"  # 替换为您的字体文件路径
+    font = FontProperties(fname=font_path)
+
+    metrics = load_metrics(metrics_file_path)
+
+    confusion_matrix = metrics["Confusion Matrix"]
+
+    plot_confusion_matrix(confusion_matrix, ['Normal', 'Abnormal'], font)
+
+    print(f"Precision: {metrics['Precision']}")
+    print(f"Recall: {metrics['Recall']}")
+    print(f"F1 Score: {metrics['F1-score']}")
+
+    # 生成性能指标的柱状图
+    plot_metrics(metrics, font)
+
+
+if __name__ == "__main__":
+    main()
