@@ -20,7 +20,8 @@ def load_metrics(file_path):
     return metrics
 
 
-def plot_confusion_matrix(confusion_matrix, class_names, font, title='Confusion Matrix', cmap=plt.cm.Blues):
+def plot_confusion_matrix(confusion_matrix, class_names, font,
+                          title='Confusion Matrix', cmap=plt.cm.Blues):
     """
     绘制混淆矩阵的函数。
 
@@ -55,7 +56,8 @@ def plot_confusion_matrix(confusion_matrix, class_names, font, title='Confusion 
         for j in range(cm.shape[1]):
             ax.text(j, i, format(cm[i, j], fmt),
                     ha="center", va="center",
-                    color="white" if cm[i, j] > thresh else "black", fontproperties=font)
+                    color="white" if cm[i, j] > thresh else "black",
+                    fontproperties=font)
 
     fig.tight_layout()
     plt.show()
@@ -73,7 +75,8 @@ def plot_metrics(metrics, font):
     metrics_values = [metrics['Precision'], metrics['Recall'], metrics['F1-score']]
 
     bar_chart(performance_metrics, metrics_values, ['blue', 'green', 'orange'],
-              'Performance Metrics', 'Value', 'Model Performance Metrics', font)
+              'Performance Metrics', 'Value',
+              'Model Performance Metrics', font)
 
 
 def bar_chart(x_labels, y_values, colors, x_label, y_label, chart_title, font):
@@ -105,7 +108,8 @@ def set_font_properties(ax, font):
         ax: Matplotlib轴对象。
         font: 字体属性。
     """
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor", fontproperties=font)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor", fontproperties=font)
     plt.setp(ax.get_yticklabels(), fontproperties=font)
 
 
